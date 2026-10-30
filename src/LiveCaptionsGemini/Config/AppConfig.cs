@@ -41,6 +41,9 @@ internal sealed class AppConfig
     /// <summary>Append every sent text and answer to transcript.txt next to config.json.</summary>
     public bool SaveTranscript { get; set; } = true;
 
+    /// <summary>Record everything Live Captions shows during the session to captions.txt.</summary>
+    public bool SaveCaptions { get; set; } = true;
+
     public const int MaxOutputTokensLimit = 65_536;
     public const int MaxHistoryTurnsLimit = 50;
 
@@ -89,6 +92,8 @@ internal sealed class AppConfig
 
           // Save every question and answer to transcript.txt (next to this file) to review later.
           "saveTranscript": true,
+          // Save everything Live Captions shows (sent or not) to captions.txt: the whole conversation.
+          "saveCaptions": true,
         }
 
         """;

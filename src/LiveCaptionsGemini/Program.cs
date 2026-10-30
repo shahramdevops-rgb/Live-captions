@@ -43,8 +43,14 @@ internal static class Program
         using var hook = new KeyboardHook(config.SendHotkey, config.SkipHotkey, form);
         using var pipeline = new SendPipeline(reader, new GeminiProvider(config), form);
 
-        // log.csv and transcript.txt live next to config.json.
+        // log.csv, transcript.txt and captions.txt live next to config.json.
         var dataDir = Path.GetDirectoryName(config.FilePath) ?? ".";
+        using var captionsFile = config.SaveCaptions ? new CaptionsRecorder(Path.Combine(dataDir, CaptionsRecorder.FileName)) : null;
+        if (captionsFile is not null)
+        {
+            poller.Changed += captionsFile.OnCaptionsChanged;
+            captionsFile.WriteFailed += form.Flash;
+        }
         var logger = new CsvLogger(Path.Combine(dataDir, CsvLogger.FileName));
         var transcript = config.SaveTranscript ? new TranscriptLogger(Path.Combine(dataDir, TranscriptLogger.FileName)) : null;
         pipeline.RequestCompleted += (text, result) =>
@@ -63,6 +69,7 @@ internal static class Program
         {
             pipeline.Start();
             poller.Start();
+            captionsFile?.Start();
             try
             {
                 hook.Start();

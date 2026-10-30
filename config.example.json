@@ -23,4 +23,6 @@
 
   // Save every question and answer to transcript.txt (next to this file) to review later.
   "saveTranscript": true,
+  // Save everything Live Captions shows (sent or not) to captions.txt: the whole conversation.
+  "saveCaptions": true,
 }

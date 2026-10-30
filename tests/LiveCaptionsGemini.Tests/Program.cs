@@ -46,6 +46,10 @@ internal static class Program
         TranscriptLoggerTests.Run(Check);
 
         Console.WriteLine();
+        Console.WriteLine("CaptionsRecorder");
+        CaptionsRecorderTests.Run(Check);
+
+        Console.WriteLine();
         Console.WriteLine("Config save (settings window)");
         ConfigSaveTests.Run(Check);
 

@@ -78,6 +78,7 @@ Comments and trailing commas are allowed. Looked up in the current directory fir
 | `opacity`, `fontSize`, `width`, `height` | `0.92`, `11`, `520`, `360` | Window look |
 | `showSettingsOnStart` | `true` | Show the settings window (prompt, max tokens, history) before the overlay |
 | `saveTranscript` | `true` | Append every question and answer to `transcript.txt` |
+| `saveCaptions` | `true` | Record the whole conversation (everything Live Captions shows) to `captions.txt` |
 
 ## transcript.txt
 Every sent text and its answer, next to `config.json` — the overlay itself can't be copied from
@@ -90,6 +91,18 @@ Q: What is the purpose of appsettings.json in .NET Core?
 A: So, appsettings json is basically where I put all my configuration settings...
 ```
 Each app start adds a session header. Turn off with `"saveTranscript": false`. Git-ignored.
+
+## captions.txt
+The whole conversation: everything Live Captions shows during the session, sent or not, next to
+`config.json`. A new timestamped paragraph starts after each pause:
+```text
+===== Session 2026-10-30 15:00 =====
+[15:00:04] Hello, can you tell me what dependency injection is in C#?
+[15:00:20] And how is it different from a service locator?
+```
+Live Captions keeps correcting its last words, so while someone speaks the last 6 words are held
+back and written after a 2-second pause (or when the app closes). Text already on screen when the
+app starts is not recorded. Turn off with `"saveCaptions": false`. Git-ignored.
 
 ## log.csv
 One row per request, next to `config.json`:
@@ -138,10 +151,10 @@ src/LiveCaptionsGemini/
   Pipeline/      SendPipeline — anchor, send/skip, parallel requests with ordered display, warm-up
   UI/            OverlayForm (IOverlayView, A−/A+ zoom), SettingsForm (startup settings),
                  ZoomBlockingRichTextBox, NativeMethods
-  Logging/       CsvLogger → log.csv, TranscriptLogger → transcript.txt
+  Logging/       CsvLogger → log.csv, TranscriptLogger → transcript.txt, CaptionsRecorder → captions.txt
 tests/LiveCaptionsGemini.Tests/
   Program.cs     AnchorText / Normalize scenarios + runner
-  PipelineTests.cs, CsvLoggerTests.cs, TranscriptLoggerTests.cs, ConfigSaveTests.cs
+  PipelineTests.cs, CsvLoggerTests.cs, TranscriptLoggerTests.cs, CaptionsRecorderTests.cs, ConfigSaveTests.cs
   LiveGeminiTests.cs, NetworkDiagnostics.cs   --live / --diag modes
 ```
 
