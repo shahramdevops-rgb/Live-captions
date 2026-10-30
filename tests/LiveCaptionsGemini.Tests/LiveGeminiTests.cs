@@ -15,7 +15,8 @@ namespace LiveCaptionsGemini.Tests;
 internal static class LiveGeminiTests
 {
     /// <param name="model">Overrides the model from config.json (--model name).</param>
-    public static async Task<bool> RunAsync(string? model)
+    /// <param name="thinking">Overrides thinkingLevel (--thinking minimal|low|medium|high).</param>
+    public static async Task<bool> RunAsync(string? model, string? thinking = null)
     {
         Console.WriteLine("Live Gemini");
 
@@ -43,6 +44,7 @@ internal static class LiveGeminiTests
         }
 
         if (model is not null) config.Model = model;
+        if (thinking is not null) config.ThinkingLevel = thinking;
         Console.WriteLine($"  model={config.Model} thinking={config.ThinkingLevel} key={(config.ApiKeyFromEnv ? "env" : "config")}");
         var ok = true;
         var gemini = new GeminiProvider(config);

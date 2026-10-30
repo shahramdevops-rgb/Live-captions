@@ -23,7 +23,9 @@ internal static class Program
 
         if (Array.IndexOf(args, "--live") >= 0)
         {
-            return LiveGeminiTests.RunAsync(model).GetAwaiter().GetResult() ? 0 : 1;
+            var t = Array.IndexOf(args, "--thinking");
+            var thinking = t >= 0 && t + 1 < args.Length ? args[t + 1] : null;
+            return LiveGeminiTests.RunAsync(model, thinking).GetAwaiter().GetResult() ? 0 : 1;
         }
 
         Console.WriteLine("AnchorText.Extract");
