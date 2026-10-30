@@ -26,22 +26,39 @@ internal sealed class OverlayForm : Form, IOverlayView
     private static readonly Color FlashColor = Color.FromArgb(240, 190, 90);
     private static readonly Color ErrorColor = Color.FromArgb(240, 100, 100);
 
+    private const float StatusFontSize = 9f;
+    private const float FontStep = 1f;
+    private const int SaveFontDelayMs = 800;
+
+    private readonly AppConfig _config;
     private readonly string _model;
     private readonly int _grip;
+    private readonly Panel _header;
     private readonly Label _status;
     private readonly Label _close;
     private readonly Label _preview;
-    private readonly RichTextBox _answers;
+    private readonly ZoomBlockingRichTextBox _answers;
     private readonly Font _answerFont;
     private readonly Font _smallFont;
     private readonly System.Windows.Forms.Timer _flashTimer = new() { Interval = FlashMs };
+    private readonly System.Windows.Forms.Timer _saveFontTimer = new() { Interval = SaveFontDelayMs };
+
+    // Answer text keeps the fonts it was written with (_answerFont/_smallFont at the start size);
+    // A− / A+ scale everything: the RichTextBox via ZoomFactor (old answers too), the labels via new fonts.
+    private readonly float _baseFontSize;
+    private float _fontSize;
+    private Font? _headerFont;
+    private Font? _previewFont;
 
     private bool _captionsOk;
     private string _providerState = "…";
 
     public OverlayForm(AppConfig config)
     {
+        _config = config;
         _model = config.Model;
+        _baseFontSize = config.FontSize;
+        _fontSize = config.FontSize;
 
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
@@ -63,32 +80,30 @@ internal sealed class OverlayForm : Form, IOverlayView
         _answerFont = new Font("Segoe UI", config.FontSize);
         _smallFont = new Font("Segoe UI", Math.Max(7f, config.FontSize - 2f));
 
-        // 1. Header: status + close. Dragging the header moves the window.
-        var header = new Panel { Dock = DockStyle.Top, Height = LogicalToDeviceUnits(24) };
+        // 1. Header: status, A− / A+ (font size), close. Dragging the header moves the window.
+        _header = new Panel { Dock = DockStyle.Top, Height = LogicalToDeviceUnits(24) };
+        var header = _header;
         _status = new Label
         {
             Name = "Status",
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleLeft,
-            Font = new Font("Segoe UI", 9f),
             ForeColor = DimColor,
             AutoEllipsis = true,
         };
-        _close = new Label
-        {
-            Name = "Close",
-            Text = "✕",
-            Dock = DockStyle.Right,
-            Width = LogicalToDeviceUnits(24),
-            TextAlign = ContentAlignment.MiddleCenter,
-            Font = new Font("Segoe UI", 9f),
-            ForeColor = DimColor,
-            Cursor = Cursors.Hand,
-        };
-        _close.MouseEnter += (_, _) => _close.ForeColor = ErrorColor;
-        _close.MouseLeave += (_, _) => _close.ForeColor = DimColor;
+        var smaller = HeaderButton("FontSmaller", "A−", DimColor, "Smaller text (or Ctrl + mouse wheel)");
+        var bigger = HeaderButton("FontBigger", "A+", DimColor, "Bigger text (or Ctrl + mouse wheel)");
+        // DoubleClick too: a Label raises DoubleClick instead of Click for the 2nd of two quick clicks.
+        smaller.Click += (_, _) => ChangeFontSize(-FontStep);
+        smaller.DoubleClick += (_, _) => ChangeFontSize(-FontStep);
+        bigger.Click += (_, _) => ChangeFontSize(+FontStep);
+        bigger.DoubleClick += (_, _) => ChangeFontSize(+FontStep);
+        _close = HeaderButton("Close", "✕", ErrorColor, "Close");
         _close.Click += (_, _) => Close();
+        // Right-docked: the last added sits rightmost → [status][A−][A+][✕].
         header.Controls.Add(_status);
+        header.Controls.Add(smaller);
+        header.Controls.Add(bigger);
         header.Controls.Add(_close);
         header.MouseDown += DragWindow;
         _status.MouseDown += DragWindow;
@@ -98,15 +113,13 @@ internal sealed class OverlayForm : Form, IOverlayView
         {
             Name = "Preview",
             Dock = DockStyle.Top,
-            Height = TextRenderer.MeasureText("Xg", _smallFont).Height * 3 + LogicalToDeviceUnits(6),
-            Font = new Font(_smallFont, FontStyle.Italic),
             ForeColor = DimColor,
             AutoEllipsis = true,
         };
         var separator = new Panel { Dock = DockStyle.Top, Height = 1, BackColor = BorderColor };
 
         // 3. Answers.
-        _answers = new RichTextBox
+        _answers = new ZoomBlockingRichTextBox
         {
             Name = "Answers",
             Dock = DockStyle.Fill,
@@ -133,6 +146,99 @@ internal sealed class OverlayForm : Form, IOverlayView
             RenderStatus();
         };
         RenderStatus();
+
+        // Ctrl + mouse wheel anywhere on the window (Windows sends the wheel to the window under
+        // the mouse even without focus). The RichTextBox's own Ctrl+wheel zoom is replaced by ours.
+        foreach (var control in new Control[] { this, header, _status, smaller, bigger, _close, _preview })
+            control.MouseWheel += OnMouseWheelZoom;
+        _answers.CtrlWheel += delta => ChangeFontSize(Math.Sign(delta) * FontStep);
+
+        _saveFontTimer.Tick += (_, _) => SaveFontSize();
+        FormClosing += (_, _) => { if (_saveFontTimer.Enabled) SaveFontSize(); };
+        ApplyFontSize();
+    }
+
+    private Label HeaderButton(string name, string text, Color hoverColor, string tooltip)
+    {
+        var button = new Label
+        {
+            Name = name,
+            Text = text,
+            Dock = DockStyle.Right,
+            Width = LogicalToDeviceUnits(26),
+            TextAlign = ContentAlignment.MiddleCenter,
+            ForeColor = DimColor,
+            Cursor = Cursors.Hand,
+            AccessibleName = tooltip,
+        };
+        button.MouseEnter += (_, _) => button.ForeColor = hoverColor == DimColor ? TextColor : hoverColor;
+        button.MouseLeave += (_, _) => button.ForeColor = DimColor;
+        return button;
+    }
+
+    // ---- Font size (A− / A+, Ctrl + wheel) ----
+
+    private void OnMouseWheelZoom(object? sender, MouseEventArgs e)
+    {
+        if ((ModifierKeys & Keys.Control) != 0) ChangeFontSize(Math.Sign(e.Delta) * FontStep);
+    }
+
+    private void ChangeFontSize(float delta)
+    {
+        var size = Math.Clamp(_fontSize + delta, AppConfig.MinFontSize, AppConfig.MaxFontSize);
+        if (size == _fontSize) return;
+        _fontSize = size;
+        ApplyFontSize();
+        Flash($"font size {_fontSize:0.#}");
+        // Save once the clicking stops.
+        _saveFontTimer.Stop();
+        _saveFontTimer.Start();
+    }
+
+    private void ApplyFontSize()
+    {
+        var scale = _fontSize / _baseFontSize;
+
+        var oldHeader = _headerFont;
+        _headerFont = new Font("Segoe UI", StatusFontSize * scale);
+        foreach (Control c in _header.Controls)
+        {
+            c.Font = _headerFont;
+            // A− / A+ / ✕ grow with the text (a fixed width clipped them at bigger sizes).
+            if (c != _status) c.Width = Math.Max(LogicalToDeviceUnits(26), TextRenderer.MeasureText(c.Text, _headerFont).Width + LogicalToDeviceUnits(6));
+        }
+        _header.Height = Math.Max(LogicalToDeviceUnits(24), TextRenderer.MeasureText("Xg", _headerFont).Height + LogicalToDeviceUnits(6));
+        oldHeader?.Dispose();
+
+        var oldPreview = _previewFont;
+        _previewFont = new Font("Segoe UI", _smallFont.Size * scale, FontStyle.Italic);
+        _preview.Font = _previewFont;
+        _preview.Height = TextRenderer.MeasureText("Xg", _previewFont).Height * 3 + LogicalToDeviceUnits(6);
+        oldPreview?.Dispose();
+
+        ApplyAnswerZoom();
+    }
+
+    private void ApplyAnswerZoom()
+    {
+        // The native control can drop its zoom (e.g. while it is empty) although ZoomFactor still reports
+        // the old value, and setting an unchanged value is ignored — so go through 1 to force it.
+        var scale = _fontSize / _baseFontSize;
+        _answers.ZoomFactor = 1f;
+        if (scale != 1f) _answers.ZoomFactor = scale;
+    }
+
+    private void SaveFontSize()
+    {
+        _saveFontTimer.Stop();
+        try
+        {
+            _config.SaveFontSize(_fontSize);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or ConfigException)
+        {
+            Flash("font size not saved: " + ex.Message);
+        }
     }
 
     // ---- Never take focus ----
@@ -210,8 +316,11 @@ internal sealed class OverlayForm : Form, IOverlayView
         if (disposing)
         {
             _flashTimer.Dispose();
+            _saveFontTimer.Dispose();
             _answerFont.Dispose();
             _smallFont.Dispose();
+            _headerFont?.Dispose();
+            _previewFont?.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -290,7 +399,9 @@ internal sealed class OverlayForm : Form, IOverlayView
         _answers.SelectionLength = 0;
         _answers.SelectionColor = color;
         _answers.SelectionFont = font;
+        var wasEmpty = _answers.TextLength == 0;
         _answers.SelectedText = text;
+        if (wasEmpty && _fontSize != _baseFontSize) ApplyAnswerZoom(); // zoom may not stick to an empty control
         _answers.SelectionStart = _answers.TextLength;
         _answers.ScrollToCaret();
     }

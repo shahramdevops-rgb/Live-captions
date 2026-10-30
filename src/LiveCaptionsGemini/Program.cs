@@ -77,7 +77,7 @@ internal static class Program
         using var settings = new SettingsForm(config);
         if (settings.ShowDialog() != DialogResult.OK) return false;
 
-        config.ApplySessionSettings(settings.Prompt, settings.MaxOutputTokens, settings.MaxHistoryTurns, settings.FontSizeValue);
+        config.ApplySessionSettings(settings.Prompt, settings.MaxOutputTokens, settings.MaxHistoryTurns);
         try
         {
             config.SaveSessionSettings();

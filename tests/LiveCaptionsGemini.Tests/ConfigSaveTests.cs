@@ -30,7 +30,7 @@ internal static class ConfigSaveTests
 
             var prompt = "Line 1 with \"quotes\", $1, a \\ backslash and {braces}\r\nLine 2 — non-ASCII ✓\r\n";
             var config = AppConfig.Load(path);
-            config.ApplySessionSettings(prompt, 300, 10, 14.5f);
+            config.ApplySessionSettings(prompt, 300, 10);
             config.SaveSessionSettings();
             var text = File.ReadAllText(path);
             var reloaded = AppConfig.Load(path);
@@ -40,19 +40,27 @@ internal static class ConfigSaveTests
                 "True, gemini-3.5-flash-lite, F9");
             check("prompt round-trips (\\r\\n → \\n, trimmed)", reloaded.SystemPrompt,
                 "Line 1 with \"quotes\", $1, a \\ backslash and {braces}\nLine 2 — non-ASCII ✓");
-            check("numbers saved", $"{reloaded.MaxOutputTokens}, {reloaded.MaxHistoryTurns}, {reloaded.KeepHistory}, {reloaded.FontSize}",
-                "300, 10, True, 14.5");
+            check("numbers saved, fontSize untouched", $"{reloaded.MaxOutputTokens}, {reloaded.MaxHistoryTurns}, {reloaded.KeepHistory}, {reloaded.FontSize}",
+                "300, 10, True, 11");
 
-            config.ApplySessionSettings("p", 0, 0, 99f);
+            config.ApplySessionSettings("p", 0, 0);
             config.SaveSessionSettings();
             reloaded = AppConfig.Load(path);
-            check("history 0 → keepHistory false; font clamped", $"{reloaded.MaxHistoryTurns}, {reloaded.KeepHistory}, {reloaded.FontSize}",
-                "0, False, 32");
+            check("history 0 → keepHistory false", $"{reloaded.MaxHistoryTurns}, {reloaded.KeepHistory}", "0, False");
+
+            // Overlay A− / A+: only fontSize changes.
+            config.SaveFontSize(13.5f);
+            reloaded = AppConfig.Load(path);
+            check("SaveFontSize writes only fontSize", $"{reloaded.FontSize}, {reloaded.SystemPrompt}, {text.Contains("// my comment stays")}",
+                "13.5, p, True");
+            config.SaveFontSize(99f);
+            check("SaveFontSize clamps to the allowed range", $"{AppConfig.Load(path).FontSize}", "32");
 
             File.WriteAllText(path, "{ \"apiKey\": \"k\" }");
             config = AppConfig.Load(path);
-            config.ApplySessionSettings("added", 200, 3, 12f);
+            config.ApplySessionSettings("added", 200, 3);
             config.SaveSessionSettings();
+            config.SaveFontSize(12f);
             reloaded = AppConfig.Load(path);
             check("missing fields are added", $"{reloaded.SystemPrompt}, {reloaded.MaxOutputTokens}, {reloaded.MaxHistoryTurns}, {reloaded.FontSize}, key={reloaded.ApiKey}",
                 "added, 200, 3, 12, key=k");

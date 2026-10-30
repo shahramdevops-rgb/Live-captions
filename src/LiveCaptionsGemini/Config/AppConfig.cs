@@ -165,17 +165,16 @@ internal sealed class AppConfig
     public const float MaxFontSize = 32f;
 
     /// <summary>Values from the settings window. History turns 0 = history off.</summary>
-    public void ApplySessionSettings(string systemPrompt, int maxOutputTokens, int maxHistoryTurns, float fontSize)
+    public void ApplySessionSettings(string systemPrompt, int maxOutputTokens, int maxHistoryTurns)
     {
         SystemPrompt = (systemPrompt ?? "").ReplaceLineEndings("\n").Trim();
         MaxOutputTokens = Math.Clamp(maxOutputTokens, 0, MaxOutputTokensLimit);
         MaxHistoryTurns = Math.Clamp(maxHistoryTurns, 0, MaxHistoryTurnsLimit);
         KeepHistory = MaxHistoryTurns > 0;
-        FontSize = Math.Clamp(fontSize, MinFontSize, MaxFontSize);
     }
 
     /// <summary>
-    /// Writes the settings-window values (systemPrompt, maxOutputTokens, maxHistoryTurns, keepHistory, fontSize)
+    /// Writes the settings-window values (systemPrompt, maxOutputTokens, maxHistoryTurns, keepHistory)
     /// back to config.json. Only those values are replaced in the text, so comments, the API key and every
     /// other field stay as they are.
     /// </summary>
@@ -187,7 +186,15 @@ internal sealed class AppConfig
         json = SetJsonValue(json, "maxOutputTokens", MaxOutputTokens.ToString(invariant));
         json = SetJsonValue(json, "maxHistoryTurns", MaxHistoryTurns.ToString(invariant));
         json = SetJsonValue(json, "keepHistory", KeepHistory ? "true" : "false");
-        json = SetJsonValue(json, "fontSize", FontSize.ToString("0.#", invariant));
+        File.WriteAllText(FilePath, json, new UTF8Encoding(false));
+    }
+
+    /// <summary>Saves only fontSize (from the overlay's A− / A+), leaving everything else in config.json as is.</summary>
+    public void SaveFontSize(float fontSize)
+    {
+        FontSize = Math.Clamp(fontSize, MinFontSize, MaxFontSize);
+        var json = File.ReadAllText(FilePath);
+        json = SetJsonValue(json, "fontSize", FontSize.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture));
         File.WriteAllText(FilePath, json, new UTF8Encoding(false));
     }
 

@@ -35,7 +35,7 @@ On first run `config.json` is created, opened in Notepad, and the app exits. Put
 ## Using it
 On start a **settings window** opens, pre-filled with the last values:
 - **System prompt** — who you are, the role, how Gemini should answer (paste freely, multiple lines are fine)
-- **Max output tokens** (0 = no limit), **History turns** (0 = off), **Font size** of the answers (with a live preview)
+- **Max output tokens** (0 = no limit) and **History turns** (0 = off)
 
 **Start** (`Ctrl+Enter`) saves them to `config.json` and opens the overlay; **Exit** (`Esc`) quits.
 Only these values are rewritten in `config.json` — the API key, comments and other fields stay as they are.
@@ -57,6 +57,8 @@ During the session:
 - Each answer ends with `⏱ first token: X ms · total: Y ms`. Errors are shown in red.
 - Drag the window by its header, resize from any edge, close with ✕. Clicking it never takes focus
   away from the app you're using.
+- **Text size:** `A−` / `A+` in the header, or `Ctrl` + mouse wheel over the window. Everything scales
+  together (status, preview, answers already shown) and the size is saved to `config.json`.
 - `Ctrl+Shift+T` and other shortcuts with Ctrl/Shift are not affected: a send only fires when no
   other key was pressed while Ctrl/Shift were held. Keys are never swallowed.
 
@@ -74,7 +76,7 @@ Comments and trailing commas are allowed. Looked up in the current directory fir
 | `sendKey` / `skipKey` | `CtrlShift` / `F9` | `CtrlShift`, `None`, or a key name like `F8`, `Pause`, `Scroll` |
 | `pollMs` | `150` | Preview refresh interval |
 | `opacity`, `fontSize`, `width`, `height` | `0.92`, `11`, `520`, `360` | Window look |
-| `showSettingsOnStart` | `true` | Show the settings window (prompt, max tokens, history, font size) before the overlay |
+| `showSettingsOnStart` | `true` | Show the settings window (prompt, max tokens, history) before the overlay |
 
 ## log.csv
 One row per request, next to `config.json`:
@@ -121,7 +123,8 @@ src/LiveCaptionsGemini/
   Input/         Hotkey (config parsing), KeyboardHook (WH_KEYBOARD_LL on its own thread)
   Providers/     IChatProvider + ProviderResult, GeminiProvider, SharedHttp, ChatHistory
   Pipeline/      SendPipeline — anchor, send/skip, parallel requests with ordered display, warm-up
-  UI/            OverlayForm (IOverlayView), SettingsForm (startup settings), NativeMethods
+  UI/            OverlayForm (IOverlayView, A−/A+ zoom), SettingsForm (startup settings),
+                 ZoomBlockingRichTextBox, NativeMethods
   Logging/       CsvLogger → log.csv
 tests/LiveCaptionsGemini.Tests/
   Program.cs     AnchorText / Normalize scenarios + runner
