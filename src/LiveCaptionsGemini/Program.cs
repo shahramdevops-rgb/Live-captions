@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Windows.Forms;
 using LiveCaptionsGemini.Captions;
 using LiveCaptionsGemini.Config;
@@ -22,6 +23,14 @@ internal static class Program
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
+
+        // Two instances would mean two keyboard hooks: every send would go out twice.
+        using var singleInstance = new Mutex(initiallyOwned: true, @"Local\LiveCaptionsGemini", out var isFirst);
+        if (!isFirst)
+        {
+            MessageBox.Show("LiveCaptions → Gemini is already running.", Title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
 
         var config = LoadConfig();
         if (config is null) return;

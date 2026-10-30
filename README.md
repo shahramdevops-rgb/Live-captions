@@ -10,7 +10,16 @@ You never type anything while using it — all configuration lives in `config.js
 - .NET 8 Desktop Runtime (builds with the .NET 8/9/10 SDK)
 - A Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) (free tier works)
 
-## Build & run
+## Double-click app (recommended)
+Build a single exe into `publish\` and put a **LiveCaptions Gemini** shortcut on the desktop:
+```bash
+powershell -ExecutionPolicy Bypass -File publish.ps1
+```
+Then just double-click the shortcut. `config.json` (copied once from the repo root) and `log.csv`
+live next to the exe in `publish\`; rebuilding never overwrites them. Run the script again after
+changing the code (close the app first). Only one instance runs at a time.
+
+## Build & run from source
 Run from the repository root, so `config.json` and `log.csv` live there:
 ```bash
 dotnet build
