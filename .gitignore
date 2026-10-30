@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+
+# Secrets and runtime output — never commit
+config.json
+log.csv

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Only for System.Windows.Automation (UIAutomationClient). -->
+    <UseWPF>true</UseWPF>
+    <!-- Off to avoid WinForms/WPF name clashes (Timer, Application, ...). -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>LiveCaptionsGemini</RootNamespace>
+    <AssemblyName>LiveCaptionsGemini</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="LiveCaptionsGemini.Tests" />
+  </ItemGroup>
+
+</Project>
