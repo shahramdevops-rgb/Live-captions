@@ -112,6 +112,7 @@
 - [x] `SettingsForm`: system prompt (چندخطی)، max output tokens، history turns
 - [x] اندازه‌ی فونت در خود overlay: دکمه‌های `A−` / `A+` و Ctrl + چرخ ماوس؛ کل پنجره (حتی جواب‌های قبلی) با هم بزرگ/کوچک می‌شه و در config ذخیره می‌شه
 - [x] exe با دبل‌کلیک (`publish.ps1` + میان‌بر دسکتاپ) و جلوگیری از اجرای دو نسخه
+- [x] `transcript.txt`: هر سوال و جواب برای مرور/کپی بعد از جلسه (`saveTranscript`)
 - [x] Start (`Ctrl+Enter`) ذخیره و شروع؛ Exit (`Esc`) خروج
 - [x] ذخیره فقط همین مقادیر در `config.json` (کلید API، کامنت‌ها و بقیه‌ی فیلدها دست نمی‌خورن)
 - [x] `showSettingsOnStart` برای غیرفعال کردن پنجره

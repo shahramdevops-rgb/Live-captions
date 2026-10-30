@@ -43,12 +43,16 @@ internal static class Program
         using var hook = new KeyboardHook(config.SendHotkey, config.SkipHotkey, form);
         using var pipeline = new SendPipeline(reader, new GeminiProvider(config), form);
 
-        // log.csv lives next to config.json.
-        var logger = new CsvLogger(Path.Combine(Path.GetDirectoryName(config.FilePath) ?? ".", CsvLogger.FileName));
+        // log.csv and transcript.txt live next to config.json.
+        var dataDir = Path.GetDirectoryName(config.FilePath) ?? ".";
+        var logger = new CsvLogger(Path.Combine(dataDir, CsvLogger.FileName));
+        var transcript = config.SaveTranscript ? new TranscriptLogger(Path.Combine(dataDir, TranscriptLogger.FileName)) : null;
         pipeline.RequestCompleted += (text, result) =>
         {
-            var error = logger.Append(text, result);
-            if (error is not null) form.Flash(error);
+            // Both always run: one failing (file open elsewhere) must not skip the other.
+            var csvError = logger.Append(text, result);
+            var transcriptError = transcript?.Append(text, result);
+            if ((csvError ?? transcriptError) is { } error) form.Flash(error);
         };
 
         poller.Changed += pipeline.OnCaptionsChanged;

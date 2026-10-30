@@ -77,6 +77,19 @@ Comments and trailing commas are allowed. Looked up in the current directory fir
 | `pollMs` | `150` | Preview refresh interval |
 | `opacity`, `fontSize`, `width`, `height` | `0.92`, `11`, `520`, `360` | Window look |
 | `showSettingsOnStart` | `true` | Show the settings window (prompt, max tokens, history) before the overlay |
+| `saveTranscript` | `true` | Append every question and answer to `transcript.txt` |
+
+## transcript.txt
+Every sent text and its answer, next to `config.json` — the overlay itself can't be copied from
+(it never takes focus), so review or copy answers here after the session:
+```text
+===== Session 2026-10-30 14:49 =====
+
+[14:52:37] gemini-3.5-flash-lite · first token 832 ms · total 1165 ms
+Q: What is the purpose of appsettings.json in .NET Core?
+A: So, appsettings json is basically where I put all my configuration settings...
+```
+Each app start adds a session header. Turn off with `"saveTranscript": false`. Git-ignored.
 
 ## log.csv
 One row per request, next to `config.json`:
@@ -125,10 +138,10 @@ src/LiveCaptionsGemini/
   Pipeline/      SendPipeline — anchor, send/skip, parallel requests with ordered display, warm-up
   UI/            OverlayForm (IOverlayView, A−/A+ zoom), SettingsForm (startup settings),
                  ZoomBlockingRichTextBox, NativeMethods
-  Logging/       CsvLogger → log.csv
+  Logging/       CsvLogger → log.csv, TranscriptLogger → transcript.txt
 tests/LiveCaptionsGemini.Tests/
   Program.cs     AnchorText / Normalize scenarios + runner
-  PipelineTests.cs, CsvLoggerTests.cs, ConfigSaveTests.cs
+  PipelineTests.cs, CsvLoggerTests.cs, TranscriptLoggerTests.cs, ConfigSaveTests.cs
   LiveGeminiTests.cs, NetworkDiagnostics.cs   --live / --diag modes
 ```
 

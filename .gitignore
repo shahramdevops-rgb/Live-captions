@@ -8,3 +8,4 @@ publish/
 # Secrets and runtime output — never commit
 config.json
 log.csv
+transcript.txt

@@ -42,6 +42,10 @@ internal static class Program
         CsvLoggerTests.Run(Check);
 
         Console.WriteLine();
+        Console.WriteLine("TranscriptLogger");
+        TranscriptLoggerTests.Run(Check);
+
+        Console.WriteLine();
         Console.WriteLine("Config save (settings window)");
         ConfigSaveTests.Run(Check);
 

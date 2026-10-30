@@ -38,6 +38,9 @@ internal sealed class AppConfig
     /// <summary>Show the settings window (prompt, max tokens, history) before the overlay.</summary>
     public bool ShowSettingsOnStart { get; set; } = true;
 
+    /// <summary>Append every sent text and answer to transcript.txt next to config.json.</summary>
+    public bool SaveTranscript { get; set; } = true;
+
     public const int MaxOutputTokensLimit = 65_536;
     public const int MaxHistoryTurnsLimit = 50;
 
@@ -83,6 +86,9 @@ internal sealed class AppConfig
 
           // Settings window (system prompt, max tokens, history) before the overlay opens.
           "showSettingsOnStart": true,
+
+          // Save every question and answer to transcript.txt (next to this file) to review later.
+          "saveTranscript": true,
         }
 
         """;
