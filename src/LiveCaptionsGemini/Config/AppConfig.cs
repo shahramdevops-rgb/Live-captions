@@ -35,6 +35,12 @@ internal sealed class AppConfig
     public int Width { get; set; } = 520;
     public int Height { get; set; } = 360;
 
+    /// <summary>Show the settings window (prompt, max tokens, history) before the overlay.</summary>
+    public bool ShowSettingsOnStart { get; set; } = true;
+
+    public const int MaxOutputTokensLimit = 65_536;
+    public const int MaxHistoryTurnsLimit = 50;
+
     [JsonIgnore] public string FilePath { get; private set; } = "";
     [JsonIgnore] public bool ApiKeyFromEnv { get; private set; }
     [JsonIgnore] public bool HasApiKey => ApiKey.Length > 0;
@@ -74,6 +80,9 @@ internal sealed class AppConfig
           "fontSize": 11,
           "width": 520,
           "height": 360,
+
+          // Settings window (system prompt, max tokens, history) before the overlay opens.
+          "showSettingsOnStart": true,
         }
 
         """;
@@ -143,13 +152,62 @@ internal sealed class AppConfig
         SendKey = SendHotkey.ToString();
         SkipKey = SkipHotkey.ToString();
 
-        MaxOutputTokens = Math.Max(0, MaxOutputTokens);
-        MaxHistoryTurns = Math.Clamp(MaxHistoryTurns, 0, 50);
+        MaxOutputTokens = Math.Clamp(MaxOutputTokens, 0, MaxOutputTokensLimit);
+        MaxHistoryTurns = Math.Clamp(MaxHistoryTurns, 0, MaxHistoryTurnsLimit);
         PollMs = Math.Clamp(PollMs, 30, 2000);
         Opacity = Math.Clamp(Opacity, 0.2, 1.0);
-        FontSize = Math.Clamp(FontSize, 7f, 32f);
+        FontSize = Math.Clamp(FontSize, MinFontSize, MaxFontSize);
         Width = Math.Clamp(Width, 240, 3000);
         Height = Math.Clamp(Height, 120, 2000);
+    }
+
+    public const float MinFontSize = 7f;
+    public const float MaxFontSize = 32f;
+
+    /// <summary>Values from the settings window. History turns 0 = history off.</summary>
+    public void ApplySessionSettings(string systemPrompt, int maxOutputTokens, int maxHistoryTurns, float fontSize)
+    {
+        SystemPrompt = (systemPrompt ?? "").ReplaceLineEndings("\n").Trim();
+        MaxOutputTokens = Math.Clamp(maxOutputTokens, 0, MaxOutputTokensLimit);
+        MaxHistoryTurns = Math.Clamp(maxHistoryTurns, 0, MaxHistoryTurnsLimit);
+        KeepHistory = MaxHistoryTurns > 0;
+        FontSize = Math.Clamp(fontSize, MinFontSize, MaxFontSize);
+    }
+
+    /// <summary>
+    /// Writes the settings-window values (systemPrompt, maxOutputTokens, maxHistoryTurns, keepHistory, fontSize)
+    /// back to config.json. Only those values are replaced in the text, so comments, the API key and every
+    /// other field stay as they are.
+    /// </summary>
+    public void SaveSessionSettings()
+    {
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
+        var json = File.ReadAllText(FilePath);
+        json = SetJsonValue(json, "systemPrompt", JsonSerializer.Serialize(SystemPrompt, WriteOptions));
+        json = SetJsonValue(json, "maxOutputTokens", MaxOutputTokens.ToString(invariant));
+        json = SetJsonValue(json, "maxHistoryTurns", MaxHistoryTurns.ToString(invariant));
+        json = SetJsonValue(json, "keepHistory", KeepHistory ? "true" : "false");
+        json = SetJsonValue(json, "fontSize", FontSize.ToString("0.#", invariant));
+        File.WriteAllText(FilePath, json, new UTF8Encoding(false));
+    }
+
+    // Keeps quotes/apostrophes/non-ASCII readable in the file instead of \u escapes.
+    private static readonly JsonSerializerOptions WriteOptions = new()
+    {
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    /// <summary>Replaces the value of a top-level "name": value pair; adds the pair if it's missing.</summary>
+    private static string SetJsonValue(string json, string name, string valueJson)
+    {
+        // A JSON string ("..." with escapes), number, or literal.
+        var pattern = "(\"" + name + "\"\\s*:\\s*)(\"(?:[^\"\\\\]|\\\\.)*\"|-?\\d+(?:\\.\\d+)?|true|false|null)";
+        var regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (regex.IsMatch(json)) return regex.Replace(json, m => m.Groups[1].Value + valueJson, 1);
+
+        var brace = json.IndexOf('{');
+        if (brace < 0) throw new ConfigException($"{FileName} has no JSON object.");
+        return json.Insert(brace + 1, $"\n  \"{name}\": {valueJson},"); // trailing commas are allowed
     }
 
     private static Hotkey ParseHotkey(string field, string? value)

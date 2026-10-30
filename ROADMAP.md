@@ -108,6 +108,13 @@
 | 5 | استریم توکن به توکن + TTFT؛ بدون گرفتن فوکوس | ✅ اولین توکن 563–772ms؛ کلیک/درگ/هات‌کی فوکوس نمی‌گیرن |
 | 6 | یک ردیف در `log.csv` برای هر درخواست | ✅ |
 
+## فاز ۸.۵ — پنجره‌ی تنظیمات موقع شروع
+- [x] `SettingsForm`: system prompt (چندخطی)، max output tokens، history turns، اندازه‌ی فونت (با پیش‌نمایش زنده)
+- [x] Start (`Ctrl+Enter`) ذخیره و شروع؛ Exit (`Esc`) خروج
+- [x] ذخیره فقط همین مقادیر در `config.json` (کلید API، کامنت‌ها و بقیه‌ی فیلدها دست نمی‌خورن)
+- [x] `showSettingsOnStart` برای غیرفعال کردن پنجره
+- [x] ۶ تست ذخیره‌ی config + تست واقعی پنجره با UI Automation
+
 ## فاز ۹ — (بعداً) چند Provider و حالت مقایسه
 - [ ] `ClaudeProvider`، `OpenAiProvider`
 - [ ] `"providers": [...]`، `"compareMode": true`

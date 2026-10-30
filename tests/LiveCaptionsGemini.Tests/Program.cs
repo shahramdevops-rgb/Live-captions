@@ -42,6 +42,10 @@ internal static class Program
         CsvLoggerTests.Run(Check);
 
         Console.WriteLine();
+        Console.WriteLine("Config save (settings window)");
+        ConfigSaveTests.Run(Check);
+
+        Console.WriteLine();
         Console.WriteLine($"{_passed} passed, {_failed} failed");
         return _failed == 0 ? 0 : 1;
     }

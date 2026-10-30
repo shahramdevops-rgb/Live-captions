@@ -17,11 +17,12 @@ internal sealed class OverlayForm : Form, IOverlayView
     private const int MaxAnswerChars = 200_000;
     private const int FlashMs = 1500;
 
-    private static readonly Color Background = Color.FromArgb(22, 22, 26);
-    private static readonly Color BorderColor = Color.FromArgb(58, 58, 68);
-    private static readonly Color TextColor = Color.FromArgb(225, 225, 230);
-    private static readonly Color DimColor = Color.FromArgb(125, 125, 135);
-    private static readonly Color AccentColor = Color.FromArgb(110, 170, 255);
+    // Shared with SettingsForm.
+    internal static readonly Color Background = Color.FromArgb(22, 22, 26);
+    internal static readonly Color BorderColor = Color.FromArgb(58, 58, 68);
+    internal static readonly Color TextColor = Color.FromArgb(225, 225, 230);
+    internal static readonly Color DimColor = Color.FromArgb(125, 125, 135);
+    internal static readonly Color AccentColor = Color.FromArgb(110, 170, 255);
     private static readonly Color FlashColor = Color.FromArgb(240, 190, 90);
     private static readonly Color ErrorColor = Color.FromArgb(240, 100, 100);
 

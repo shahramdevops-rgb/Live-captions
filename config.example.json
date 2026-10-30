@@ -17,4 +17,7 @@
   "fontSize": 11,
   "width": 520,
   "height": 360,
+
+  // Settings window (system prompt, max tokens, history) before the overlay opens.
+  "showSettingsOnStart": true,
 }

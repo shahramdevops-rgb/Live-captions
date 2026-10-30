@@ -25,6 +25,7 @@ internal static class Program
 
         var config = LoadConfig();
         if (config is null) return;
+        if (config.ShowSettingsOnStart && !AskSessionSettings(config)) return;
 
         CaptionsReader.EnsureRunning();
         var reader = new CaptionsReader();
@@ -59,6 +60,26 @@ internal static class Program
             }
         };
         Application.Run(form);
+    }
+
+    /// <summary>Settings window before the overlay; false = the user chose Exit.</summary>
+    private static bool AskSessionSettings(AppConfig config)
+    {
+        using var settings = new SettingsForm(config);
+        if (settings.ShowDialog() != DialogResult.OK) return false;
+
+        config.ApplySessionSettings(settings.Prompt, settings.MaxOutputTokens, settings.MaxHistoryTurns, settings.FontSizeValue);
+        try
+        {
+            config.SaveSessionSettings();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ConfigException)
+        {
+            // Not fatal: the values are used for this session anyway.
+            MessageBox.Show($"Settings are used for this session but could not be saved:\n{ex.Message}",
+                Title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        return true;
     }
 
     /// <summary>Null means the app should exit (config was just created or is broken).</summary>
